@@ -9,3 +9,71 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+model User {
+  id           String            @id @default(uuid())
+  username     String
+  email        String            @unique
+  password     String
+  imageProfile String?
+  displayName  String?
+  firstName    String?
+  lastName     String?
+  genders      Gender?           @relation("gender", fields: [gender], references: [name], onUpdate: Cascade, onDelete: Cascade)
+  gender       String?
+  address      String?
+  phoneNumber  String?
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  trips        TripParticipant[]
+}
+
+model Gender {
+  name  String @id
+  users User[] @relation("gender")
+}
+
+enum TripStatus {
+  OPEN
+  PROGRESS
+  CLOSE
+}
+
+model trip {
+  id             String            @id @default(uuid())
+  name           String
+  maxParticipant Int
+  isPublic       Boolean           @default(true)
+  status         TripStatus        @default(OPEN)
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  participants   TripParticipant[]
+  Camp           Camp?             @relation(fields: [campName], references: [name], onUpdate: Cascade, onDelete: Cascade)
+  campName       String?
+  campId         String?
+}
+
+model TripParticipant {
+  tripId    String
+  userId    String
+  User      User     @relation(fields: [userId], references: [id])
+  Trip      trip     @relation(fields: [tripId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  isPending Boolean  @default(true)
+
+  @@id([tripId, userId])
+}
+
+model Camp {
+  name        String   @id @unique
+  description String
+  address     String
+  phoneNumber String
+  location    String
+  latitude    Float
+  longitude   Float
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  trips       trip[]
+}

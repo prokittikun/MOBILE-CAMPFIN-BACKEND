@@ -26,6 +26,18 @@ class ReqGoogleProfilePhotoDataDto {
   readonly value: string;
 }
 
+class ReqGoogleProfileNameDataDto {
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  readonly familyName: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  readonly givenName: string;
+}
+
 export class ReqGoogleProfileDataDto {
   @ApiProperty()
   @IsString()
@@ -40,7 +52,7 @@ export class ReqGoogleProfileDataDto {
   @ApiProperty()
   @IsString()
   @IsNotEmpty()
-  readonly name: string;
+  readonly name: ReqGoogleProfileNameDataDto;
 
   @ApiProperty({ type: [ReqGoogleProfileEmailDataDto] })
   @IsNotEmpty()

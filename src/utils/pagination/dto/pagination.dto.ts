@@ -1,24 +1,35 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsNotEmpty, IsNumber, IsString } from 'class-validator';
+import {
+  IsEmail,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 
-export class PaginationDTO {
-  @ApiProperty()
+export class PaginationDto {
+  @ApiProperty({ default: 10 })
   @IsNumber()
   @IsNotEmpty()
   perPages: number;
 
-  @ApiProperty()
+  @ApiProperty({ default: 1 })
   @IsNumber()
   @IsNotEmpty()
-  page: number;
+  currentPage: number;
 
   @ApiProperty()
-  @IsNumber()
-  @IsNotEmpty()
-  sortFide: string;
+  @IsString()
+  @IsOptional()
+  search: string;
 
   @ApiProperty()
-  @IsNumber()
-  @IsNotEmpty()
+  @IsString()
+  @IsOptional()
+  sortField: string;
+
+  @ApiProperty({ default: 'asc' })
+  @IsString()
+  @IsOptional()
   sortType: string;
 }

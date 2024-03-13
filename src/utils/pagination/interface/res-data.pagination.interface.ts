@@ -1,4 +1,3 @@
-/* eslint-disable prettier/prettier */
 export interface ResDataCommon<T> {
   totalItems: number;
   itemsPerPage: number;
@@ -8,7 +7,7 @@ export interface ResDataCommon<T> {
   datas: T[];
 }
 export interface ResDataCommonOption {
-  sortFide: string;
+  sortField: string;
   sortType: string;
   search: string;
 }

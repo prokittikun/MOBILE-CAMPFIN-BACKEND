@@ -6,6 +6,7 @@ import {
   Param,
   Post,
   Req,
+  Res,
   UseGuards,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
@@ -13,11 +14,11 @@ import { ApiTags } from '@nestjs/swagger';
 import { User } from '@prisma/client';
 import { ApiOkResponseData } from 'src/decorator/ApiOkResponse.decorator';
 import { AuthenticationService } from './authentication.service';
-import { ReqGoogleLoginDataDto } from './dto/requests/req-google-login-data';
-import { ReqGoogleProfileDataDto } from './dto/requests/req-google-profile-data';
+import { ReqGoogleLoginDataDto } from './dto/requests/req-google-login-data.dto';
+import { ReqGoogleProfileDataDto } from './dto/requests/req-google-profile-data.dto';
 import { ReqLoginDto } from './dto/requests/req-login-data.dto';
 import { ReqRegisterDto } from './dto/requests/req-register-data.dto';
-import { ResDataDto } from './dto/responses/res-data.dto';
+import { ResDataDto } from '../DTO/res-data.dto';
 import { ResJWTDataDto } from './dto/responses/res-jwt-data.dto';
 import { Public } from './reflector';
 
@@ -54,9 +55,24 @@ export class AuthenticationController {
 
   @Get('google-redirect')
   @UseGuards(AuthGuard('google'))
-  googleAuthRedirect(@Req() req): Promise<ResDataDto<ResJWTDataDto>> {
+  async googleAuthRedirect(@Req() req, @Res() res) {
+    //: Promise<ResDataDto<ResJWTDataDto>>
     const { profile } = req.user;
     const data = profile as ReqGoogleProfileDataDto;
-    return this.authenticationService.ApiLoginWithGoogleRedirect(data);
+    const resp = await this.authenticationService.ApiLoginWithGoogleRedirect(
+      data,
+    );
+
+    if (req.headers['user-agent'].includes('Mobile')) {
+      console.log(req.headers['referer'], req.headers['user-agent']);
+
+      return res.redirect(
+        `com.campfin.app://data?status=${resp.statusCode}&token=${resp.data.accessToken}`,
+      );
+    } else {
+      return res.redirect(
+        `http://localhost:5173/login?status=${resp.statusCode}&token=${resp.data.accessToken}`,
+      );
+    }
   }
 }

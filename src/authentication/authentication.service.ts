@@ -1,4 +1,9 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import {
+  HttpException,
+  HttpStatus,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { User } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
@@ -6,12 +11,12 @@ import { OAuth2Client } from 'google-auth-library';
 import { EnumStatus } from '../enum/status.enum';
 import { UsersService } from '../users/users.service';
 import { LogService } from '../utils/log/log.service';
-import { ReqGoogleLoginDataDto } from './dto/requests/req-google-login-data';
+import { ReqGoogleLoginDataDto } from './dto/requests/req-google-login-data.dto';
 import { ReqLoginDto } from './dto/requests/req-login-data.dto';
 import { ReqRegisterDto } from './dto/requests/req-register-data.dto';
-import { ResDataDto } from './dto/responses/res-data.dto';
+import { ResDataDto } from '../DTO/res-data.dto';
 import { ResJWTDataDto } from './dto/responses/res-jwt-data.dto';
-import { ReqGoogleProfileDataDto } from './dto/requests/req-google-profile-data';
+import { ReqGoogleProfileDataDto } from './dto/requests/req-google-profile-data.dto';
 
 @Injectable()
 export class AuthenticationService {
@@ -41,14 +46,13 @@ export class AuthenticationService {
       return res;
     } catch (error) {
       this.logger.error(`${tag} -> `, error);
-      throw new HttpException(`${error}`, HttpStatus.INTERNAL_SERVER_ERROR);
+      throw error;
     }
   }
 
   async loginWithGoogle(
     googleLoginData: ReqGoogleLoginDataDto,
   ): Promise<ResJWTDataDto> {
-    const tag = this.loginWithGoogle.name;
     try {
       const ticket = await this.google.verifyIdToken({
         idToken: googleLoginData.token,
@@ -64,6 +68,9 @@ export class AuthenticationService {
         const userData = {
           username: 'google_' + data.name + '_' + data.sub,
           email: data.email,
+          firstName: data.given_name,
+          lastName: data.family_name,
+          profileImage: data.picture,
           password: bcrypt.hashSync(data.sub, 10),
         };
         user = await this.usersService.create(userData);
@@ -78,8 +85,7 @@ export class AuthenticationService {
       const accessToken = await this.signJWT(payload);
       return { accessToken };
     } catch (error) {
-      this.logger.error(`${tag} -> `, error);
-      throw new HttpException(`${error}`, HttpStatus.INTERNAL_SERVER_ERROR);
+      throw error;
     }
   }
 
@@ -96,14 +102,13 @@ export class AuthenticationService {
       return res;
     } catch (error) {
       this.logger.error(`${tag} -> `, error);
-      throw new HttpException(`${error}`, HttpStatus.INTERNAL_SERVER_ERROR);
+      throw error;
     }
   }
 
   async loginWithGoogleRedirect(
     profile: ReqGoogleProfileDataDto,
   ): Promise<ResJWTDataDto> {
-    const tag = this.loginWithGoogleRedirect.name;
     try {
       let user = await this.usersService.findUnique({
         email: profile.emails[0].value,
@@ -126,8 +131,7 @@ export class AuthenticationService {
       const accessToken = await this.signJWT(payload);
       return { accessToken };
     } catch (error) {
-      this.logger.error(`${tag} -> `, error);
-      throw new HttpException(`${error}`, HttpStatus.INTERNAL_SERVER_ERROR);
+      throw error;
     }
   }
 
@@ -142,12 +146,11 @@ export class AuthenticationService {
       return res;
     } catch (error) {
       this.logger.error(`${tag} -> `, error);
-      throw new HttpException(`${error}`, HttpStatus.INTERNAL_SERVER_ERROR);
+      throw error;
     }
   }
 
   async signUp(registerDto: ReqRegisterDto): Promise<User> {
-    const tag = this.signUp.name;
     try {
       const hashedPassword = await bcrypt.hash(registerDto.password, 10);
       const userData = {
@@ -163,8 +166,7 @@ export class AuthenticationService {
       }
       return res;
     } catch (error) {
-      this.logger.error(`${tag} -> `, error);
-      throw new HttpException(`${error}`, HttpStatus.INTERNAL_SERVER_ERROR);
+      throw error;
     }
   }
 
@@ -179,25 +181,24 @@ export class AuthenticationService {
       return res;
     } catch (error) {
       this.logger.error(`${tag} -> `, error);
-      throw new HttpException(`${error}`, HttpStatus.INTERNAL_SERVER_ERROR);
+      throw error;
     }
   }
 
   async signIn(loginDto: ReqLoginDto): Promise<ResJWTDataDto> {
-    const tag = this.signIn.name;
     try {
       const user = await this.usersService.find(
         {
           username: loginDto.username,
         },
-        { id: true, password: true },
+        { id: true, username: true, password: true },
       );
       if (!user) {
         throw new HttpException('User not found', HttpStatus.UNAUTHORIZED);
       }
       const isMatch = await bcrypt.compare(loginDto.password, user.password);
       if (!isMatch) {
-        throw new HttpException('Invalid credentials', HttpStatus.UNAUTHORIZED);
+        throw new HttpException('Invalid password', HttpStatus.UNAUTHORIZED);
       }
       const payload = {
         username: user.username,
@@ -207,8 +208,7 @@ export class AuthenticationService {
         accessToken: await this.signJWT(payload),
       };
     } catch (error) {
-      this.logger.error(`${tag} -> `, error);
-      throw new HttpException(`${error}`, HttpStatus.INTERNAL_SERVER_ERROR);
+      throw error;
     }
   }
 

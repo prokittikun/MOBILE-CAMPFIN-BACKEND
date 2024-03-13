@@ -11,21 +11,23 @@ datasource db {
 }
 
 model User {
-  id           String            @id @default(uuid())
+  id           String               @id @default(uuid())
   username     String
-  email        String            @unique
+  email        String               @unique
   password     String
-  imageProfile String?
+  profileImage String?
   displayName  String?
   firstName    String?
   lastName     String?
-  genders      Gender?           @relation("gender", fields: [gender], references: [name], onUpdate: Cascade, onDelete: Cascade)
+  genders      Gender?              @relation("gender", fields: [gender], references: [name], onUpdate: Cascade, onDelete: Cascade)
   gender       String?
   address      String?
   phoneNumber  String?
-  createdAt    DateTime          @default(now())
-  updatedAt    DateTime          @updatedAt
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+  Trip         Trip[]
   trips        TripParticipant[]
+  preTrips     PreTripParticipant[]
 }
 
 model Gender {
@@ -39,41 +41,82 @@ enum TripStatus {
   CLOSE
 }
 
-model trip {
-  id             String            @id @default(uuid())
-  name           String
-  maxParticipant Int
-  isPublic       Boolean           @default(true)
-  status         TripStatus        @default(OPEN)
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @updatedAt
-  participants   TripParticipant[]
-  Camp           Camp?             @relation(fields: [campName], references: [name], onUpdate: Cascade, onDelete: Cascade)
-  campName       String?
-  campId         String?
+model Trip {
+  id              String               @id @default(uuid())
+  title           String
+  description     String
+  maxParticipant  Int
+  isPublic        Boolean              @default(true)
+  status          TripStatus           @default(OPEN)
+  startDate       DateTime
+  endDate         DateTime
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+  participants    TripParticipant[]
+  preParticipants PreTripParticipant[]
+  Place           Place?               @relation(fields: [placeName], references: [name], onUpdate: Cascade, onDelete: Cascade)
+  placeName       String
+  User            User?                @relation(fields: [userId], references: [id])
+  userId          String
+  Agenda          Agenda[]
+}
+
+//to do yarn db generate
+model Agenda {
+  id           String         @id @default(uuid())
+  date         DateTime       @db.Date
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  Trip         Trip           @relation(fields: [tripId], references: [id], onUpdate: Cascade, onDelete: Cascade)
+  tripId       String
+  agendaDetail AgendaDetail[]
+}
+
+model AgendaDetail {
+  id          String   @id @default(uuid())
+  title       String
+  description String
+  timeStart   String
+  timeEnd     String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  Agenda      Agenda   @relation(fields: [agendaId], references: [id])
+  agendaId    String
 }
 
 model TripParticipant {
   tripId    String
   userId    String
   User      User     @relation(fields: [userId], references: [id])
-  Trip      trip     @relation(fields: [tripId], references: [id])
+  Trip      Trip     @relation(fields: [tripId], references: [id], onUpdate: Cascade, onDelete: Cascade)
+  isPending Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  isPending Boolean  @default(true)
 
   @@id([tripId, userId])
 }
 
-model Camp {
+model PreTripParticipant {
+  tripId    String
+  userId    String
+  User      User     @relation(fields: [userId], references: [id])
+  Trip      Trip     @relation(fields: [tripId], references: [id], onUpdate: Cascade, onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@id([tripId, userId])
+}
+
+model Place {
   name        String   @id @unique
+  image       String
   description String
   address     String
-  phoneNumber String
+  contact     String
   location    String
   latitude    Float
   longitude   Float
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  trips       trip[]
+  trips       Trip[]
 }

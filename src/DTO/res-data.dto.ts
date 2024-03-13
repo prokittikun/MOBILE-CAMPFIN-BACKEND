@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsEmpty, IsNotEmpty, IsOptional, IsString } from 'class-validator';
-import { EnumStatus } from '../../../enum/status.enum';
-import { ResJWTDataDto } from './res-jwt-data.dto';
+import { EnumStatus } from '../enum/status.enum';
+import { ResJWTDataDto } from '../authentication/dto/responses/res-jwt-data.dto';
 
 export class ResDataDto<T> {
   @ApiProperty({ enum: EnumStatus })

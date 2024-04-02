@@ -9,8 +9,14 @@ import { ReqCreatePlaceDataDto } from './dto/requests/req-create-place-data.dto'
 import { ResDataDto } from '../DTO/res-data.dto';
 import { EnumStatus } from '../enum/status.enum';
 import { Request } from 'express';
-import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import {
+  DeleteObjectCommand,
+  PutObjectCommand,
+  S3Client,
+} from '@aws-sdk/client-s3';
 import { s3 } from '../utils/S3-Client';
+import { ReqUpdatePlaceDataDto } from './dto/requests/req-update-place-data.dto';
+import { ReqCreateReviewDataDto } from './dto/requests/req-create-review-data.dto';
 @Injectable()
 export class PlaceService {
   private logger = new LogService(PlaceService.name);
@@ -40,6 +46,93 @@ export class PlaceService {
     }
   }
 
+  async ApiCreateReview(
+    req: Request,
+    reviewData: ReqCreateReviewDataDto,
+  ): Promise<ResDataDto<Place>> {
+    const tag = this.ApiCreateReview.name;
+    try {
+      const res: ResDataDto<Place> = {
+        statusCode: EnumStatus.success,
+        data: await this.createReview(req, reviewData),
+        message: '',
+      };
+      return res;
+    } catch (error) {
+      this.logger.error(`${tag} -> `, error);
+      throw error;
+    }
+  }
+
+  async createReview(
+    req: Request,
+    reviewData: ReqCreateReviewDataDto,
+  ): Promise<any> {
+    try {
+      const place = await this.findUnique({
+        name: reviewData.placeName,
+      });
+      if (!place) {
+        throw new HttpException('Place not found', 404);
+      }
+      const createReview = await this.prisma.review.create({
+        data: {
+          rating: reviewData.rating,
+          content: reviewData.content,
+          Place: {
+            connect: {
+              name: place.name,
+            },
+          },
+          User: {
+            connect: {
+              id: req.user.sub,
+            },
+          },
+        },
+      });
+      return createReview;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async ApiGetReviews(placeName: string): Promise<any> {
+    const tag = this.ApiGetReviews.name;
+    try {
+      const res: ResDataDto<Place> = {
+        statusCode: EnumStatus.success,
+        data: await this.getReviews(placeName),
+        message: '',
+      };
+      return res;
+    } catch (error) {
+      this.logger.error(`${tag} -> `, error);
+      throw error;
+    }
+  }
+
+  async getReviews(placeName: string): Promise<any> {
+    try {
+      const place = await this.findUnique({
+        name: placeName,
+      });
+      if (!place) {
+        throw new HttpException('Place not found', 404);
+      }
+      const reviews = await this.prisma.review.findMany({
+        where: {
+          placeName: place.name,
+        },
+        include: {
+          User: true,
+        },
+      });
+      return reviews;
+    } catch (error) {
+      throw error;
+    }
+  }
   async createPlace(
     req: Request,
     placeData: ReqCreatePlaceDataDto,
@@ -67,6 +160,104 @@ export class PlaceService {
     } catch (error) {
       throw error;
     }
+  }
+
+  async ApiUpdatePlace(
+    req: Request,
+    placeData: ReqUpdatePlaceDataDto,
+    placeImage: Express.Multer.File,
+  ): Promise<ResDataDto<Place>> {
+    const tag = this.ApiUpdatePlace.name;
+    try {
+      const res: ResDataDto<Place> = {
+        statusCode: EnumStatus.success,
+        data: await this.updatePlace(req, placeData, placeImage),
+        message: '',
+      };
+      return res;
+    } catch (error) {
+      this.logger.error(`${tag} -> `, error);
+      throw error;
+    }
+  }
+
+  async updatePlace(
+    req: Request,
+    placeData: ReqUpdatePlaceDataDto,
+    placeImage: Express.Multer.File,
+  ): Promise<Place> {
+    try {
+      const camp = await this.findUnique({
+        name: placeData.name,
+      });
+      if (!camp) {
+        throw new HttpException('Place not found', 404);
+      }
+      const fileName = `${placeData.name}-${new Date().getTime()}`;
+
+      const imageUrl = fileName + '.jpg';
+      const placeDataWithImage = Object.assign(placeData, {
+        image: imageUrl,
+        latitude: Number(placeData.latitude),
+        longitude: Number(placeData.longitude),
+      });
+      await s3.send(
+        new DeleteObjectCommand({
+          Bucket: this.campBucket,
+          Key: camp.image,
+        }),
+      );
+      await s3.send(
+        new PutObjectCommand({
+          Bucket: this.campBucket,
+          Key: fileName + '.jpg',
+          Body: placeImage.buffer,
+        }),
+      );
+      const updatedData = await this.update({
+        where: {
+          name: placeData.name,
+        },
+        data: placeDataWithImage,
+      });
+
+      return updatedData;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async ApiDeletePlace(placeName: string): Promise<ResDataDto<Place>> {
+    const tag = this.ApiDeletePlace.name;
+    try {
+      const res: ResDataDto<Place> = {
+        statusCode: EnumStatus.success,
+        data: await this.deletePlace(placeName),
+        message: '',
+      };
+      return res;
+    } catch (error) {
+      this.logger.error(`${tag} -> `, error);
+      throw error;
+    }
+  }
+
+  async deletePlace(placeName: string): Promise<Place> {
+    const place = await this.findUnique({
+      name: placeName,
+    });
+    if (!place) {
+      throw new HttpException('Place not found', 404);
+    }
+    await s3.send(
+      new DeleteObjectCommand({
+        Bucket: this.campBucket,
+        Key: place.image,
+      }),
+    );
+    return await this.delete({
+      name: placeName,
+    });
   }
 
   async ApiGetPlaces(
@@ -122,6 +313,8 @@ export class PlaceService {
       },
       // concat image url
       datas: data.map((place) => {
+        if (place.image.includes('http://') || place.image.includes('https://'))
+          return place;
         return {
           ...place,
           image: `${process.env.S3_URL}/${this.campBucket}/${place.image}`,

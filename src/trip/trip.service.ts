@@ -1471,7 +1471,6 @@ export class TripService {
     userId: string,
     placeName: string,
   ): Promise<Trip> {
-    const agendaData = data.agenda as unknown as Prisma.AgendaCreateInput[];
     const createdTrip = await this.prisma.trip.create({
       data: {
         title: data.title,
@@ -1492,12 +1491,15 @@ export class TripService {
         },
       },
     });
-    await this.prisma.agenda.createMany({
-      data: agendaData.map((a) => ({
-        ...a,
-        tripId: createdTrip.id,
-      })),
-    });
+    if (data.agenda !== undefined) {
+      const agendaData = data.agenda as unknown as Prisma.AgendaCreateInput[];
+      await this.prisma.agenda.createMany({
+        data: agendaData.map((a) => ({
+          ...a,
+          tripId: createdTrip.id,
+        })),
+      });
+    }
     return this.getTrip(createdTrip.id);
   }
 

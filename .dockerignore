@@ -1,8 +1,5 @@
 node_modules
-Dockerfile
-.dockerignore
 .git
 .env
-dist
 error.log
 debug.log

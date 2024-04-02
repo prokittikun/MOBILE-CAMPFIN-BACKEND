@@ -117,6 +117,7 @@ export class AuthenticationService {
         const userData = {
           username: 'google_' + profile.displayName + '_' + profile.id,
           email: profile.emails[0].value,
+          profileImage: profile.photos[0].value,
           password: bcrypt.hashSync(profile.id, 10),
         };
         user = await this.usersService.create(userData);

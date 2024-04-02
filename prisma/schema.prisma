@@ -12,6 +12,7 @@ datasource db {
 
 model User {
   id           String               @id @default(uuid())
+  campId       Int                  @default(autoincrement())
   username     String
   email        String               @unique
   password     String
@@ -28,6 +29,7 @@ model User {
   Trip         Trip[]
   trips        TripParticipant[]
   preTrips     PreTripParticipant[]
+  reviews      review[]
 }
 
 model Gender {
@@ -119,4 +121,18 @@ model Place {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   trips       Trip[]
+  reviews     review[]
+}
+
+
+model review {
+  id        String   @id @default(uuid())
+  content   String
+  rating    Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  User      User     @relation(fields: [userId], references: [id])
+  userId    String
+  Place     Place    @relation(fields: [placeName], references: [name])
+  placeName String
 }

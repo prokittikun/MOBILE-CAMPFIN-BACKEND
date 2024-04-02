@@ -18,6 +18,7 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:seed:camp": "ts-node prisma/seeds/camp.seed.ts",
+    "db:seed:gender": "ts-node prisma/seeds/gender.seed.ts",
     "db:seed:trip": "ts-node prisma/seeds/trip.seed.ts",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "test": "jest",

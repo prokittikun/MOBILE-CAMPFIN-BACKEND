@@ -8,37 +8,30 @@ const main = async () => {
     await prisma.place.createMany({
       data: [
         {
-          name: 'Camp 1',
+          name: 'อุทยานแห่งชาติเอราวัณ',
           image:
-            'https://3.bp.blogspot.com/-8z2GQvlB3oA/WOMfr179a5I/AAAAAAAAc-o/HQsm8gIbfgk38r6IaYXskaucHgZ78jh8ACLcB/s1600/khoasok.jpg',
-          description: 'Camp 1 description',
-          address: 'Camp 1 address',
-          contact: 'Camp 1 contact',
-          location: 'Camp 1 location link',
-          latitude: 1.0,
-          longitude: 1.0,
+            'https://upload.wikimedia.org/wikipedia/commons/thumb/7/75/Erawan_Falls_National_Park.jpg/1200px-Erawan_Falls_National_Park.jpg',
+          description:
+            'อุทยานแห่งชาติที่มีน้ำตกเอราวัณ น้ำตก 7 ชั้นที่มีความสวยงาม น้ำใสไหลเย็น เหมาะสำหรับการเล่นน้ำตก พักผ่อนหย่อนใจ และปิคนิค',
+          address:
+            '53/1 หมู่ 5 ตำบลท่ากระดาน อำเภอศรีสวัสดิ์ จังหวัดกาญจนบุรี 71250',
+          contact: '034 584 354, 034 584 254',
+          location:
+            'ตำบลท่ากระดาน, ตำบลห้วยเขย่ง อำเภอศรีสวัสดิ์ จังหวัดกาญจนบุรี',
+          latitude: 14.041667,
+          longitude: 99.416667,
         },
         {
-          name: 'Camp 2',
+          name: 'อุทยานแห่งชาติหมู่เกาะสิมิลัน',
           image:
-            'https://3.bp.blogspot.com/-8z2GQvlB3oA/WOMfr179a5I/AAAAAAAAc-o/HQsm8gIbfgk38r6IaYXskaucHgZ78jh8ACLcB/s1600/khoasok.jpg',
-          description: 'Camp 2 description',
-          address: 'Camp 2 address',
-          contact: 'Camp 2 contact',
-          location: 'Camp 2 location link',
-          latitude: 2.0,
-          longitude: 2.0,
-        },
-        {
-          name: 'Camp 3',
-          image:
-            'https://3.bp.blogspot.com/-8z2GQvlB3oA/WOMfr179a5I/AAAAAAAAc-o/HQsm8gIbfgk38r6IaYXskaucHgZ78jh8ACLcB/s1600/khoasok.jpg',
-          description: 'Camp 3 description',
-          address: 'Camp 3 address',
-          contact: 'Camp 3 contact',
-          location: 'Camp 3 location link',
-          latitude: 3.0,
-          longitude: 3.0,
+            'https://upload.wikimedia.org/wikipedia/commons/thumb/4/40/Similan_Islands_National_Park.jpg/1200px-Similan_Islands_National_Park.jpg',
+          description:
+            'อุทยานแห่งชาติทางทะเลที่มีหมู่เกาะ 9 เกาะ น้ำทะเลใส หาดทรายขาวละเอียด ปะการังสวยงาม เหมาะสำหรับการดำน้ำ ชมปะการัง และพักผ่อนหย่อนใจ',
+          address: '55 หมู่ 4 ตำบลทับละมุ อำเภอคุระบุรี จังหวัดพังงา 82140',
+          contact: '076 421 005, 076 421 367',
+          location: 'ตำบลทับละมุ, ตำบลคุระบุรี อำเภอคุระบุรี จังหวัดพังงา',
+          latitude: 8.608333,
+          longitude: 97.958333,
         },
       ],
     });

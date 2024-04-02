@@ -13,7 +13,7 @@ import { PutObjectCommand } from '@aws-sdk/client-s3';
 @Injectable()
 export class UsersService {
   private logger = new LogService(UsersService.name);
-
+  private bucket = 'user';
   constructor(private prisma: PrismaService) {}
 
   async ApiUpdateProfile(
@@ -49,7 +49,8 @@ export class UsersService {
       }
       let data;
       if (profileImage) {
-        const fileName = user.id + 'jpg';
+        //file name = uid + current timestamp .jpg
+        const fileName = `${req.user.sub}-${Date.now()}.jpg`;
         const imageUrl = fileName;
         data = {
           ...updateUserDto,
@@ -57,7 +58,7 @@ export class UsersService {
         };
         await s3.send(
           new PutObjectCommand({
-            Bucket: 'camp',
+            Bucket: 'user',
             Key: fileName,
             Body: profileImage.buffer,
           }),
@@ -73,6 +74,42 @@ export class UsersService {
       });
 
       return userUpdate;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async ApiGetProfile(req: Request) {
+    const tag = this.ApiGetProfile.name;
+    try {
+      const res: ResDataDto<User> = {
+        statusCode: EnumStatus.success,
+        data: await this.getProfile(req),
+        message: '',
+      };
+      return res;
+    } catch (error) {
+      this.logger.error(`${tag} -> `, error);
+      throw error;
+    }
+  }
+
+  async getProfile(req: Request): Promise<User> {
+    try {
+      const user = await this.prisma.user.findUnique({
+        where: { id: req.user.sub },
+        include: {
+          trips: true,
+        },
+      });
+      user.profileImage =
+        user.profileImage != null
+          ? `${process.env.S3_URL}/${this.bucket}/${user.profileImage}`
+          : null;
+      if (!user) {
+        throw new HttpException('User not found', HttpStatus.UNAUTHORIZED);
+      }
+      return user;
     } catch (error) {
       throw error;
     }

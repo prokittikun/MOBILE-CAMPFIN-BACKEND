@@ -8,6 +8,11 @@ RUN yarn
 
 COPY . .
 
+RUN yarn db:generate
+
+EXPOSE 3000
+
 RUN yarn build
 
-CMD [ "node", "dist/main.js" ]
+
+CMD [ "node", "dist/src/main.js" ]

@@ -3,7 +3,7 @@ import { PrismaService } from '../database/prisma.service';
 import { LogService } from '../utils/log/log.service';
 import { PaginationService } from '../utils/pagination/createPagination.service';
 import { PaginationDto } from '../utils/pagination/dto/pagination.dto';
-import { Place, Prisma } from '@prisma/client';
+import { Place, Prisma, Trip } from '@prisma/client';
 import { ResPaginationDataDto } from '../utils/pagination/dto/res-pagination-data.dto';
 import { ReqCreatePlaceDataDto } from './dto/requests/req-create-place-data.dto';
 import { ResDataDto } from '../DTO/res-data.dto';
@@ -27,6 +27,44 @@ export class PlaceService {
     private paginationService: PaginationService,
   ) {}
 
+  async ApiVisitedPlaces(req: Request): Promise<ResDataDto<Place[]>> {
+    const tag = this.ApiVisitedPlaces.name;
+    try {
+      const res: ResDataDto<Place[]> = {
+        statusCode: EnumStatus.success,
+        data: await this.visitedPlaces(req),
+        message: '',
+      };
+      return res;
+    } catch (error) {
+      this.logger.error(`${tag} -> `, error);
+      throw error;
+    }
+  }
+
+  async visitedPlaces(req: Request): Promise<Place[]> {
+    try {
+      const reward = await this.prisma.rewardAchieved.findMany({
+        where: {
+          userId: req.user.sub,
+        },
+        include: {
+          Reward: {
+            include: {
+              Place: true,
+            },
+          },
+        },
+      });
+      const places = reward.map((r) => ({
+        ...r.Reward.Place,
+        image: `${process.env.S3_URL}/${this.campBucket}/${r.Reward.Place.image}`,
+      }));
+      return places;
+    } catch (error) {
+      throw error;
+    }
+  }
   async ApiCreatePlace(
     req: Request,
     placeData: ReqCreatePlaceDataDto,

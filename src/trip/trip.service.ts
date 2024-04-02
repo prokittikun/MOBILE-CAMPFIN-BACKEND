@@ -387,6 +387,8 @@ export class TripService {
         maxParticipant: true,
         isPublic: true,
         status: true,
+        startDate: true,
+        endDate: true,
         createdAt: true,
         updatedAt: true,
         User: {
@@ -703,6 +705,8 @@ export class TripService {
         maxParticipant: true,
         isPublic: true,
         status: true,
+        startDate: true,
+        endDate: true,
         createdAt: true,
         updatedAt: true,
         User: {

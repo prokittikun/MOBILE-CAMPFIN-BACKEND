@@ -101,4 +101,11 @@ export class PlaceController {
   async getReviews(@Param('placeName') placeName: string): Promise<any> {
     return await this.placeService.ApiGetReviews(placeName);
   }
+
+  @Get('my-visited-places')
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard)
+  async myVisitedPlaces(@Req() req: Request): Promise<any> {
+    return await this.placeService.ApiVisitedPlaces(req);
+  }
 }

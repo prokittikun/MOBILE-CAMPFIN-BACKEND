@@ -61,6 +61,7 @@ export class TripService {
       {
         id: true,
         title: true,
+        description: true,
         maxParticipant: true,
         isPublic: true,
         status: true,
@@ -376,6 +377,7 @@ export class TripService {
       select: {
         id: true,
         title: true,
+        description: true,
         maxParticipant: true,
         isPublic: true,
         status: true,

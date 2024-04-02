@@ -26,6 +26,7 @@ import {
   PreTripParticipant,
   Trip,
   TripParticipant,
+  agendaString,
 } from '@prisma/client';
 import { PaginationDto } from '../utils/pagination/dto/pagination.dto';
 import { ResPaginationDataDto } from '../utils/pagination/dto/res-pagination-data.dto';
@@ -192,6 +193,14 @@ export class TripController {
     @Body() agendaData: ReqRootAgendaDto,
   ): Promise<ResDataDto<any>> {
     return await this.tripService.ApiCreateAgenda(req, agendaData);
+  }
+
+  @Get('agenda/:tripId')
+  // @ApiOkResponseData(ResAgendaDto)
+  async getAgenda(
+    @Param('tripId') tripId: string,
+  ): Promise<ResDataDto<agendaString[]>> {
+    return await this.tripService.ApiGetAgenda(tripId);
   }
 
   @Patch('update-agenda-details')

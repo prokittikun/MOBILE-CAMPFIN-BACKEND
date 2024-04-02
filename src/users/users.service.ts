@@ -133,7 +133,7 @@ export class UsersService {
         userClone.alias = 'นักแคมป์มือใหม่';
       } else if (tripCount > 2) {
         userClone.alias = 'ผู้มีประสบการณ์ในการแคมป์';
-      } else if (tripCount > 5) {
+      } else {
         userClone.alias = 'ผู้เชี่ยวชาญด้านการแคมป์';
       }
 

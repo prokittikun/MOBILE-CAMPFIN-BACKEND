@@ -1,3 +1,4 @@
+import { PutObjectCommand } from '@aws-sdk/client-s3';
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import {
   Agenda,
@@ -17,25 +18,20 @@ import { ResPaginationDataDto } from 'src/utils/pagination/dto/res-pagination-da
 import { ResDataDto } from '../DTO/res-data.dto';
 import { PrismaService } from '../database/prisma.service';
 import { EnumStatus } from '../enum/status.enum';
+import { s3 } from '../utils/S3-Client';
 import { LogService } from '../utils/log/log.service';
 import { PaginationService } from '../utils/pagination/createPagination.service';
 import { PaginationDto } from '../utils/pagination/dto/pagination.dto';
 import { ReqApproveMemberOfTripDataDto } from './dto/requests/req-approve-member-of-trip-data.dto';
+import { ReqRootAgendaDto } from './dto/requests/req-create-agenda.dto';
 import { ReqCreateTripDataDto } from './dto/requests/req-create-trip-data.dto';
+import { ReqDeleteAgendaDetailsDto } from './dto/requests/req-delete-agenda-details.dto';
 import { ReqJoinTripDataDto } from './dto/requests/req-join-trip-data.dto';
 import { ReqKickMemberOfTripDataDto } from './dto/requests/req-kick-member-of-trip-data.dto';
 import { ReqLeavePreTripDataDto } from './dto/requests/req-leave-pre-trip-data.dto';
 import { ReqLeaveTripDataDto } from './dto/requests/req-leave-trip-data.dto';
-import { ReqUpdateTripDataDto } from './dto/requests/req-update-trip-data.dto';
-import {
-  ReqCreateAgendaDto,
-  ReqRootAgendaDto,
-} from './dto/requests/req-create-agenda.dto';
-import * as moment from 'moment';
 import { ReqUpdateAgendaDetailsDto } from './dto/requests/req-update-agenda-details.dto';
-import { ReqDeleteAgendaDetailsDto } from './dto/requests/req-delete-agenda-details.dto';
-import { s3 } from '../utils/S3-Client';
-import { PutObjectCommand } from '@aws-sdk/client-s3';
+import { ReqUpdateTripDataDto } from './dto/requests/req-update-trip-data.dto';
 
 @Injectable()
 export class TripService {
@@ -976,6 +972,33 @@ export class TripService {
       this.logger.error(`${tag} -> `, error);
       throw error;
     }
+  }
+
+  async ApiGetAgenda(tripId: string): Promise<ResDataDto<agendaString[]>> {
+    const tag = this.ApiGetAgenda.name;
+    try {
+      const res: ResDataDto<agendaString[]> = {
+        statusCode: EnumStatus.success,
+        data: await this.getAgenda(tripId),
+        message: '',
+      };
+      return res;
+    } catch (error) {
+      this.logger.error(`${tag} -> `, error);
+      throw error;
+    }
+  }
+
+  async getAgenda(tripId: string): Promise<agendaString[]> {
+    const agenda = this.prisma.agendaString.findMany({
+      where: {
+        Trip: { id: tripId },
+      },
+    });
+    if (!agenda) {
+      throw new HttpException('agenda not found', HttpStatus.NOT_FOUND);
+    }
+    return agenda;
   }
 
   async ApiUpdateTrip(

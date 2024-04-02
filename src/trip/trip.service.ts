@@ -1010,13 +1010,15 @@ export class TripService {
         HttpStatus.FORBIDDEN,
       );
     }
-    if (tripData.isPublic) {
+    const { tripId, ...data } = tripData;
+
+    if (tripData.isPublic && !trip.isPublic) {
       await this.update({
         where: {
-          id: tripData.tripId,
+          id: tripId,
         },
         data: {
-          ...tripData,
+          ...data,
           participants: {
             updateMany: {
               where: {
@@ -1030,12 +1032,14 @@ export class TripService {
         },
       });
     }
+    // data for update exclude tripId
+
     return await this.update({
       where: {
-        id: tripData.tripId,
+        id: tripId,
       },
       data: {
-        ...tripData,
+        ...data,
       },
     });
   }

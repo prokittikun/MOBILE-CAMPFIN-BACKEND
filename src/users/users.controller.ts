@@ -49,6 +49,11 @@ export class UsersController {
   async getProfile(@Req() req: Request) {
     return await this.usersService.ApiGetProfile(req);
   }
+
+  @Get('profile/:userId')
+  async getProfileById(@Param('userId') userId: string) {
+    return await this.usersService.ApiGetProfileById(userId);
+  }
   // @Post()
   // create(@Body() createUserDto: CreateUserDto) {
   //   return this.usersService.create(createUserDto);

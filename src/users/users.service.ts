@@ -84,7 +84,7 @@ export class UsersService {
     try {
       const res: ResDataDto<User> = {
         statusCode: EnumStatus.success,
-        data: await this.getProfile(req),
+        data: await this.getProfile(req.user.sub),
         message: '',
       };
       return res;
@@ -94,22 +94,50 @@ export class UsersService {
     }
   }
 
-  async getProfile(req: Request): Promise<User> {
+  async ApiGetProfileById(userId: string) {
+    const tag = this.ApiGetProfileById.name;
+    try {
+      const res: ResDataDto<User> = {
+        statusCode: EnumStatus.success,
+        data: await this.getProfile(userId),
+        message: '',
+      };
+      return res;
+    } catch (error) {
+      this.logger.error(`${tag} -> `, error);
+      throw error;
+    }
+  }
+
+  async getProfile(userId: string): Promise<User> {
     try {
       const user = await this.prisma.user.findUnique({
-        where: { id: req.user.sub },
+        where: { id: userId },
         include: {
           trips: true,
         },
       });
+      if (!user) {
+        throw new HttpException('User not found', HttpStatus.UNAUTHORIZED);
+      }
+      const tripCount = user.trips.length;
       user.profileImage =
         user.profileImage != null
           ? `${process.env.S3_URL}/${this.bucket}/${user.profileImage}`
           : null;
-      if (!user) {
-        throw new HttpException('User not found', HttpStatus.UNAUTHORIZED);
+
+      const userClone = Object.assign(user, {
+        alias: '',
+      });
+      if (tripCount > 0) {
+        userClone.alias = 'นักแคมป์มือใหม่';
+      } else if (tripCount > 2) {
+        userClone.alias = 'ผู้มีประสบการณ์ในการแคมป์';
+      } else if (tripCount > 5) {
+        userClone.alias = 'ผู้เชี่ยวชาญด้านการแคมป์';
       }
-      return user;
+
+      return userClone;
     } catch (error) {
       throw error;
     }

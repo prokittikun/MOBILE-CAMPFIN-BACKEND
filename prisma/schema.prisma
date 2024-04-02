@@ -61,7 +61,7 @@ model Trip {
   preParticipants    PreTripParticipant[]
   Place              Place?               @relation(fields: [placeName], references: [name], onUpdate: Cascade, onDelete: Cascade)
   placeName          String
-  User               User?                @relation(fields: [userId], references: [id])
+  User               User?                @relation(fields: [userId], references: [id], onUpdate: Cascade, onDelete: Cascade)
   userId             String
   Agenda             Agenda[]
   PendingCheckInTrip PendingCheckInTrip[]
@@ -74,7 +74,7 @@ model agendaString {
   content   String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  Trip      Trip     @relation(fields: [tripId], references: [id])
+  Trip      Trip     @relation(fields: [tripId], references: [id], onUpdate: Cascade, onDelete: Cascade)
   tripId    String
 }
 
@@ -97,14 +97,14 @@ model AgendaDetail {
   timeEnd     String
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  Agenda      Agenda   @relation(fields: [agendaId], references: [id])
+  Agenda      Agenda   @relation(fields: [agendaId], references: [id], onUpdate: Cascade, onDelete: Cascade)
   agendaId    String
 }
 
 model TripParticipant {
   tripId    String
   userId    String
-  User      User     @relation(fields: [userId], references: [id])
+  User      User     @relation(fields: [userId], references: [id], onUpdate: Cascade, onDelete: Cascade)
   Trip      Trip     @relation(fields: [tripId], references: [id], onUpdate: Cascade, onDelete: Cascade)
   isPending Boolean  @default(false)
   createdAt DateTime @default(now())
@@ -116,7 +116,7 @@ model TripParticipant {
 model PreTripParticipant {
   tripId    String
   userId    String
-  User      User     @relation(fields: [userId], references: [id])
+  User      User     @relation(fields: [userId], references: [id], onUpdate: Cascade, onDelete: Cascade)
   Trip      Trip     @relation(fields: [tripId], references: [id], onUpdate: Cascade, onDelete: Cascade)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -146,9 +146,9 @@ model Review {
   rating    Int
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  User      User     @relation(fields: [userId], references: [id])
+  User      User     @relation(fields: [userId], references: [id], onUpdate: Cascade, onDelete: Cascade)
   userId    String
-  Place     Place    @relation(fields: [placeName], references: [name])
+  Place     Place    @relation(fields: [placeName], references: [name], onUpdate: Cascade, onDelete: Cascade)
   placeName String
 }
 
@@ -160,7 +160,7 @@ model Reward {
   rewardImage    String
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
-  Place          Place            @relation(fields: [placeName], references: [name])
+  Place          Place            @relation(fields: [placeName], references: [name], onUpdate: Cascade, onDelete: Cascade)
   RewardAchieved RewardAchieved[]
 }
 
@@ -171,8 +171,8 @@ model PendingCheckInTrip {
   imageEvidence String
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
-  User          User     @relation(fields: [userId], references: [id])
-  Trip          Trip     @relation(fields: [tripId], references: [id])
+  User          User     @relation(fields: [userId], references: [id], onUpdate: Cascade, onDelete: Cascade)
+  Trip          Trip     @relation(fields: [tripId], references: [id], onUpdate: Cascade, onDelete: Cascade)
 }
 
 model RewardAchieved {
@@ -181,8 +181,8 @@ model RewardAchieved {
   rewardId  String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  User      User     @relation(fields: [userId], references: [id])
-  Reward    Reward   @relation(fields: [rewardId], references: [id])
+  User      User     @relation(fields: [userId], references: [id], onUpdate: Cascade, onDelete: Cascade)
+  Reward    Reward   @relation(fields: [rewardId], references: [id], onUpdate: Cascade, onDelete: Cascade)
 }
 
 model tripChat {
@@ -190,8 +190,8 @@ model tripChat {
   content   String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  User      User     @relation(fields: [userId], references: [id])
+  User      User     @relation(fields: [userId], references: [id], onUpdate: Cascade, onDelete: Cascade)
   userId    String
-  Trip      Trip     @relation(fields: [tripId], references: [id])
+  Trip      Trip     @relation(fields: [tripId], references: [id], onUpdate: Cascade, onDelete: Cascade)
   tripId    String
 }

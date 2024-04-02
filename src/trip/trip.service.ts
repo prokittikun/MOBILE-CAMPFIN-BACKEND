@@ -42,6 +42,21 @@ export class TripService {
     private paginationService: PaginationService,
   ) {}
 
+  async ApiGetRewardArchived(userId: string) {
+    const tag = this.ApiGetRewardArchived.name;
+    try {
+      const res = {
+        statusCode: EnumStatus.success,
+        data: await this.getMyRewardArchived(userId),
+        message: '',
+      };
+      return res;
+    } catch (error) {
+      this.logger.error(`${tag} -> `, error);
+      throw error;
+    }
+  }
+
   async ApiUserCheckInTrip(
     req: Request,
     tripId: string,
@@ -263,7 +278,7 @@ export class TripService {
     try {
       const res = {
         statusCode: EnumStatus.success,
-        data: await this.getMyRewardArchived(req),
+        data: await this.getMyRewardArchived(req.user.sub),
         message: '',
       };
       return res;
@@ -273,12 +288,12 @@ export class TripService {
     }
   }
 
-  async getMyRewardArchived(req: Request) {
+  async getMyRewardArchived(userId: string) {
     console.log('asdadasd');
 
     const reward = (await this.prisma.rewardAchieved.findMany({
       where: {
-        userId: req.user.sub,
+        userId: userId,
       },
       include: {
         Reward: true,
@@ -803,7 +818,9 @@ export class TripService {
         Place: {
           ...d.Place,
           image: d.Place.image
-            ? `${process.env.S3_URL}/camp/${d.Place.image}`
+            ? d.Place.image.startsWith('http')
+              ? d.Place.image
+              : `${process.env.S3_URL}/camp/${d.Place.image}`
             : null,
         },
       })),

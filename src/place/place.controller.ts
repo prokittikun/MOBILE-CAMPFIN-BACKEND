@@ -27,6 +27,7 @@ import { imageFileFilter } from '../utils/validator';
 import { ReqUpdatePlaceDataDto } from './dto/requests/req-update-place-data.dto';
 import { ReqCreateReviewDataDto } from './dto/requests/req-create-review-data.dto';
 import { AuthGuard } from '../authentication/authentication.guard';
+import { ReqCreateRewardDataDto } from './dto/requests/req-create-reward-data.dto';
 
 @Controller('place')
 @ApiTags('Place')
@@ -107,5 +108,24 @@ export class PlaceController {
   @UseGuards(AuthGuard)
   async myVisitedPlaces(@Req() req: Request): Promise<any> {
     return await this.placeService.ApiVisitedPlaces(req);
+  }
+
+  @Post('create-reward/:placeName')
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(
+    FileInterceptor('rewardImage', { fileFilter: imageFileFilter }),
+  )
+  async createReward(
+    @Req() req: Request,
+    @Body() rewardData: ReqCreateRewardDataDto,
+    @Param('placeName') placeName: string,
+    @UploadedFile() rewardImage: Express.Multer.File,
+  ): Promise<any> {
+    return await this.placeService.ApiCreateReward(
+      req,
+      placeName,
+      rewardData,
+      rewardImage,
+    );
   }
 }

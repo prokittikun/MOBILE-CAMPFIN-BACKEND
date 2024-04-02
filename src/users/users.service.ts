@@ -1,4 +1,10 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import {
+  HttpException,
+  HttpStatus,
+  Inject,
+  Injectable,
+  forwardRef,
+} from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { LogService } from '../utils/log/log.service';
@@ -10,11 +16,16 @@ import { EnumStatus } from '../enum/status.enum';
 import { Request } from 'express';
 import { s3 } from 'src/utils/S3-Client';
 import { PutObjectCommand } from '@aws-sdk/client-s3';
+import { TripService } from '../trip/trip.service';
 @Injectable()
 export class UsersService {
   private logger = new LogService(UsersService.name);
   private bucket = 'user';
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    @Inject(forwardRef(() => TripService))
+    private tripService: TripService,
+  ) {}
 
   async ApiUpdateProfile(
     req: Request,
@@ -123,13 +134,18 @@ export class UsersService {
       const tripCount = user.trips.length;
       user.profileImage =
         user.profileImage != null
-          ? `${process.env.S3_URL}/${this.bucket}/${user.profileImage}`
+          ? user.profileImage.startsWith('http')
+            ? user.profileImage
+            : `${process.env.S3_URL}/${this.bucket}/${user.profileImage}`
           : null;
+      const rewardAchieved = await this.tripService.getMyRewardArchived(userId);
+      console.log('rewardAchieved', rewardAchieved);
 
       const userClone = Object.assign(user, {
         alias: '',
+        rewardAchieved,
       });
-      if (tripCount > 0) {
+      if (tripCount >= 0) {
         userClone.alias = 'นักแคมป์มือใหม่';
       } else if (tripCount > 2) {
         userClone.alias = 'ผู้มีประสบการณ์ในการแคมป์';

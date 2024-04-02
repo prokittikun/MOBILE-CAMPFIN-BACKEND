@@ -1,12 +1,21 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { UsersController } from './users.controller';
 import { PrismaService } from '../database/prisma.service';
-import { JwtModule } from '@nestjs/jwt';
+import { JwtModule, JwtService } from '@nestjs/jwt';
+import { TripModule } from '../trip/trip.module';
+import { TripService } from '../trip/trip.service';
+import { PaginationService } from '../utils/pagination/createPagination.service';
 
 @Module({
-  imports: [JwtModule],
+  imports: [JwtModule, forwardRef(() => TripModule)],
   controllers: [UsersController],
-  providers: [UsersService, PrismaService],
+  providers: [
+    UsersService,
+    PrismaService,
+    TripService,
+    PaginationService,
+    JwtService,
+  ],
 })
 export class UsersModule {}

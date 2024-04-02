@@ -1,13 +1,16 @@
 import { Module } from '@nestjs/common';
 import { AuthenticationService } from './authentication.service';
 import { AuthenticationController } from './authentication.controller';
-import { JwtModule } from '@nestjs/jwt';
+import { JwtModule, JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { UsersModule } from '../users/users.module';
 import { UsersService } from '../users/users.service';
 import { PrismaService } from '../database/prisma.service';
 import { PassportModule } from '@nestjs/passport';
 import { GoogleStrategy } from './strategies/google.strategy';
+import { TripModule } from '../trip/trip.module';
+import { TripService } from '../trip/trip.service';
+import { PaginationService } from '../utils/pagination/createPagination.service';
 
 @Module({
   imports: [
@@ -21,6 +24,7 @@ import { GoogleStrategy } from './strategies/google.strategy';
         },
       }),
     }),
+    TripModule,
   ],
   controllers: [AuthenticationController],
   providers: [
@@ -28,6 +32,8 @@ import { GoogleStrategy } from './strategies/google.strategy';
     UsersService,
     PrismaService,
     GoogleStrategy,
+    TripService,
+    PaginationService,
   ],
 })
 export class AuthenticationModule {}

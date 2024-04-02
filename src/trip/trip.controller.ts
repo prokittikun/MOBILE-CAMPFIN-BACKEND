@@ -141,6 +141,11 @@ export class TripController {
     return await this.tripService.ApiGetMyRewardArchived(req);
   }
 
+  @Get('reward-archived/:userId')
+  async getRewardArchived(@Param('userId') userId: string) {
+    return await this.tripService.ApiGetRewardArchived(userId);
+  }
+
   @Get(':tripId')
   @ApiOkResponseData(ResCreateTripDataDto)
   async getTrip(

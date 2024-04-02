@@ -17,10 +17,12 @@ import {
 import { s3 } from '../utils/S3-Client';
 import { ReqUpdatePlaceDataDto } from './dto/requests/req-update-place-data.dto';
 import { ReqCreateReviewDataDto } from './dto/requests/req-create-review-data.dto';
+import { ReqCreateRewardDataDto } from './dto/requests/req-create-reward-data.dto';
 @Injectable()
 export class PlaceService {
   private logger = new LogService(PlaceService.name);
   private campBucket = 'camp';
+  private rewardBucket = 'reward';
 
   constructor(
     private prisma: PrismaService,
@@ -194,6 +196,70 @@ export class PlaceService {
         }),
       );
       console.log('data', data);
+      return createdData;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async ApiCreateReward(
+    req: Request,
+    placeName: string,
+    rewardData: ReqCreateRewardDataDto,
+    rewardImage: Express.Multer.File,
+  ): Promise<ResDataDto<Place>> {
+    const tag = this.ApiCreateReward.name;
+    try {
+      const res: ResDataDto<Place> = {
+        statusCode: EnumStatus.success,
+        data: await this.createReward(req, placeName, rewardData, rewardImage),
+        message: '',
+      };
+      return res;
+    } catch (error) {
+      this.logger.error(`${tag} -> `, error);
+      throw error;
+    }
+  }
+
+  async createReward(
+    req: Request,
+    placeName: string,
+    rewardData: ReqCreateRewardDataDto,
+    rewardImage: Express.Multer.File,
+  ): Promise<any> {
+    try {
+      const place = await this.findUnique({
+        name: placeName,
+      });
+      if (!place) {
+        throw new HttpException('Place not found', 404);
+      }
+
+      const fileName = `${rewardData.name}-${new Date().getTime()}`;
+
+      const imageUrl = fileName + '.jpg';
+
+      const createdData = await this.prisma.reward.create({
+        data: {
+          name: rewardData.name,
+          description: rewardData.description,
+          rewardImage: imageUrl,
+          Place: {
+            connect: {
+              name: place.name,
+            },
+          },
+        },
+      });
+      const data = await s3.send(
+        new PutObjectCommand({
+          Bucket: this.rewardBucket,
+          Key: imageUrl,
+          Body: rewardImage.buffer,
+        }),
+      );
+
       return createdData;
     } catch (error) {
       throw error;

@@ -1,12 +1,16 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import {
   Agenda,
+  PendingCheckInTrip,
   Place,
   PreTripParticipant,
   Prisma,
+  Reward,
+  RewardAchieved,
   Trip,
   TripParticipant,
   TripStatus,
+  agendaString,
 } from '@prisma/client';
 import { Request } from 'express';
 import { ResPaginationDataDto } from 'src/utils/pagination/dto/res-pagination-data.dto';
@@ -30,15 +34,333 @@ import {
 import * as moment from 'moment';
 import { ReqUpdateAgendaDetailsDto } from './dto/requests/req-update-agenda-details.dto';
 import { ReqDeleteAgendaDetailsDto } from './dto/requests/req-delete-agenda-details.dto';
+import { s3 } from '../utils/S3-Client';
+import { PutObjectCommand } from '@aws-sdk/client-s3';
 
 @Injectable()
 export class TripService {
   private logger = new LogService(TripService.name);
-
+  private bucket = 'trip';
   constructor(
     private prisma: PrismaService,
     private paginationService: PaginationService,
   ) {}
+
+  async ApiUserCheckInTrip(
+    req: Request,
+    tripId: string,
+    placeImage: Express.Multer.File,
+  ): Promise<ResDataDto<Trip>> {
+    const tag = this.ApiUserCheckInTrip.name;
+    try {
+      const res: ResDataDto<Trip> = {
+        statusCode: EnumStatus.success,
+        data: await this.userCheckInTrip(tripId, req.user.sub, placeImage),
+        message: '',
+      };
+      return res;
+    } catch (error) {
+      this.logger.error(`${tag} -> `, error);
+      throw error;
+    }
+  }
+
+  async userCheckInTrip(
+    tripId: string,
+    userId: string,
+    placeImage: Express.Multer.File,
+  ): Promise<Trip> {
+    const trip = await this.findUnique({ id: tripId });
+    if (!trip) {
+      throw new HttpException('Trip not found', HttpStatus.NOT_FOUND);
+    }
+    if (trip.userId !== userId) {
+      throw new HttpException(
+        'You are not authorized to check in this trip',
+        HttpStatus.FORBIDDEN,
+      );
+    }
+    if (trip.status === TripStatus.CLOSE) {
+      throw new HttpException('The trip has ended', HttpStatus.BAD_REQUEST);
+    }
+    if (trip.status !== TripStatus.PROGRESS) {
+      throw new HttpException(
+        'The trip has not started yet',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const fileName = `${tripId}-${Date.now()}.jpg`;
+    const data = await s3.send(
+      new PutObjectCommand({
+        Bucket: this.bucket,
+        Key: fileName + '.jpg',
+        Body: placeImage.buffer,
+      }),
+    );
+    await this.prisma.pendingCheckInTrip.create({
+      data: {
+        userId: userId,
+        tripId: tripId,
+        imageEvidence: fileName,
+      },
+    });
+    return await this.getTrip(tripId);
+  }
+
+  async ApiGetPendingCheckIn(
+    req: Request,
+    paginationData: PaginationDto,
+  ): Promise<ResPaginationDataDto<PendingCheckInTrip[]>> {
+    const tag = this.ApiGetPendingCheckIn.name;
+    try {
+      return await this.getPendingCheckIn(req, paginationData);
+    } catch (error) {
+      this.logger.error(`${tag} -> `, error);
+      throw error;
+    }
+  }
+
+  async getPendingCheckIn(
+    req: Request,
+    paginationData: PaginationDto,
+  ): Promise<ResPaginationDataDto<PendingCheckInTrip[]>> {
+    const totalItems = await this.prisma.pendingCheckInTrip.count({
+      where: {
+        OR: [
+          {
+            imageEvidence: {
+              contains: paginationData.search || '',
+            },
+          },
+          {
+            Trip: {
+              title: {
+                contains: paginationData.search || '',
+              },
+            },
+          },
+          {
+            Trip: {
+              Place: {
+                name: {
+                  contains: paginationData.search || '',
+                },
+              },
+            },
+          },
+        ],
+      },
+    });
+
+    const paginationCalc = this.paginationService.paginationCal(
+      totalItems,
+      paginationData.perPages,
+      paginationData.currentPage,
+    );
+
+    const data = await this.prisma.pendingCheckInTrip.findMany({
+      skip: paginationCalc.skips,
+      take: paginationCalc.limit,
+      where: {
+        OR: [
+          {
+            imageEvidence: {
+              contains: paginationData.search || '',
+            },
+          },
+          {
+            Trip: {
+              title: {
+                contains: paginationData.search || '',
+              },
+            },
+          },
+          {
+            Trip: {
+              Place: {
+                name: {
+                  contains: paginationData.search || '',
+                },
+              },
+            },
+          },
+        ],
+      },
+      orderBy: {
+        [paginationData.sortField || 'createdAt']:
+          paginationData.sortType === 'asc' ? 'asc' : 'desc',
+      },
+      include: {
+        User: {
+          select: {
+            id: true,
+            username: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            profileImage: true,
+          },
+        },
+        Trip: {
+          select: {
+            id: true,
+            title: true,
+            description: true,
+            maxParticipant: true,
+            isPublic: true,
+            status: true,
+            startDate: true,
+            endDate: true,
+            createdAt: true,
+            updatedAt: true,
+            Place: {
+              select: {
+                name: true,
+                image: true,
+                description: true,
+                address: true,
+                contact: true,
+                location: true,
+                latitude: true,
+                longitude: true,
+                createdAt: true,
+                updatedAt: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const itemPerpage = data.length;
+    const res: ResPaginationDataDto<PendingCheckInTrip[]> = {
+      totalItems,
+      itemsPerPage: itemPerpage,
+      totalPages: paginationCalc.totalPages,
+      currentPage: paginationData.currentPage,
+      option: {
+        search: paginationData.search,
+        sortField: paginationData.sortField,
+        sortType: paginationData.sortType,
+      },
+      datas: data.map((d) => ({
+        ...d,
+        imageEvidence: `${process.env.S3_URL}/trip/${d.imageEvidence}`,
+        Trip: {
+          ...d.Trip,
+          Place: {
+            ...d.Trip.Place,
+            image: d.Trip.Place.image
+              ? `${process.env.S3_URL}/camp/${d.Trip.Place.image}`
+              : null,
+          },
+        },
+      })),
+    };
+
+    return res;
+  }
+
+  async ApiGetMyRewardArchived(req: Request) {
+    const tag = this.ApiGetMyRewardArchived.name;
+    try {
+      const res = {
+        statusCode: EnumStatus.success,
+        data: await this.getMyRewardArchived(req),
+        message: '',
+      };
+      return res;
+    } catch (error) {
+      this.logger.error(`${tag} -> `, error);
+      throw error;
+    }
+  }
+
+  async getMyRewardArchived(req: Request) {
+    console.log('asdadasd');
+
+    const reward = (await this.prisma.rewardAchieved.findMany({
+      where: {
+        userId: req.user.sub,
+      },
+      include: {
+        Reward: true,
+      },
+    })) as (RewardAchieved & { Reward: Reward })[];
+    reward.forEach((r) => {
+      if (r.Reward.rewardImage.startsWith('http') === false) {
+        r.Reward.rewardImage = r.Reward.rewardImage
+          ? `${process.env.S3_URL}/reward/${r.Reward.rewardImage}`
+          : null;
+      }
+    });
+
+    return reward;
+  }
+
+  async ApiApproveCheckIn(req: Request, tripId: string, userId: string) {
+    const tag = this.ApiApproveCheckIn.name;
+    try {
+      const res = {
+        statusCode: EnumStatus.success,
+        data: await this.approveCheckIn(tripId, userId, req.user.sub),
+        message: '',
+      };
+      return res;
+    } catch (error) {
+      this.logger.error(`${tag} -> `, error);
+      throw error;
+    }
+  }
+
+  async ApiDeleteCheckIn(pendingId: string) {
+    const tag = this.ApiDeleteCheckIn.name;
+    try {
+      const res = {
+        statusCode: EnumStatus.success,
+        data: await this.deleteCheckIn(pendingId),
+        message: '',
+      };
+      return res;
+    } catch (error) {
+      this.logger.error(`${tag} -> `, error);
+      throw error;
+    }
+  }
+
+  async deleteCheckIn(pendingId: string) {
+    return await this.prisma.pendingCheckInTrip.delete({
+      where: {
+        id: pendingId,
+      },
+    });
+  }
+
+  async approveCheckIn(tripId: string, userId: string, approverId: string) {
+    const trip = await this.findUnique({ id: tripId });
+    if (!trip) {
+      throw new HttpException('Trip not found', HttpStatus.NOT_FOUND);
+    }
+    const reward = await this.prisma.reward.findFirst({
+      where: {
+        placeName: trip.placeName,
+      },
+    });
+    const data = await this.prisma.rewardAchieved.create({
+      data: {
+        userId: userId,
+        rewardId: reward.id,
+      },
+    });
+    await this.prisma.pendingCheckInTrip.deleteMany({
+      where: {
+        tripId: tripId,
+        userId: userId,
+      },
+    });
+    return data;
+  }
 
   async ApiGetTrip(id: string): Promise<ResDataDto<Trip>> {
     const tag = this.ApiGetTrip.name;
@@ -857,6 +1179,7 @@ export class TripService {
           },
         },
         userId: true,
+        isPublic: true,
       },
     )) as (Trip & { participants: TripParticipant[] }) | null;
     if (!trip) {
@@ -1218,10 +1541,10 @@ export class TripService {
   async ApiCreateAgenda(
     req: Request,
     agendaData: ReqRootAgendaDto,
-  ): Promise<ResDataDto<Agenda>> {
+  ): Promise<ResDataDto<any>> {
     const tag = this.ApiCreateAgenda.name;
     try {
-      const res: ResDataDto<Agenda> = {
+      const res = {
         statusCode: EnumStatus.success,
         data: await this.createAgenda(agendaData, req.user.sub),
         message: '',
@@ -1233,10 +1556,8 @@ export class TripService {
     }
   }
 
-  async createAgenda(
-    agendaData: ReqRootAgendaDto,
-    userId: string,
-  ): Promise<Agenda> {
+  async createAgenda(agendaData: ReqRootAgendaDto, userId: string) {
+    //: Promise<Agenda>
     const tripId = agendaData.tripId;
     const trip = (await this.findUnique(
       { id: tripId },
@@ -1267,52 +1588,62 @@ export class TripService {
         HttpStatus.BAD_REQUEST,
       );
     }
-    for (const agenda of agendaData.agenda) {
-      const existingAgenda = await this.prisma.agenda.findFirst({
-        where: {
-          tripId: tripId,
-          date: new Date(agenda.date),
-        },
-      });
 
-      if (existingAgenda) {
-        await this.prisma.agendaDetail.createMany({
-          data: agenda.agendaDetail.map((detail) => ({
-            title: detail.title,
-            description: detail.description,
-            timeStart: detail.timeStart,
-            timeEnd: detail.timeEnd,
-            agendaId: existingAgenda.id,
-          })),
-        });
-      } else {
-        // If the agenda for the given date does not exist, create a new agenda
-        await this.prisma.agenda.create({
-          data: {
-            date: new Date(agenda.date),
-            tripId,
-            agendaDetail: {
-              createMany: {
-                data: agenda.agendaDetail.map((detail) => ({
-                  title: detail.title,
-                  description: detail.description,
-                  timeStart: detail.timeStart,
-                  timeEnd: detail.timeEnd,
-                })),
-              },
-            },
-          },
-        });
-      }
-    }
-    return await this.prisma.agenda.findFirst({
-      where: {
-        tripId: tripId,
-      },
-      include: {
-        agendaDetail: true,
-      },
+    //create agendaString
+    const agenda = await this.prisma.agendaString.createMany({
+      data: agendaData.agenda.map((agenda) => ({
+        tripId,
+        content: agenda,
+      })),
     });
+    return agenda;
+    // for (const agenda of agendaData.agenda) {
+    //   const existingAgenda = await this.prisma.agenda.findFirst({
+    //     where: {
+    //       tripId: tripId,
+    //       date: new Date(agenda.date),
+    //     },
+    //   });
+
+    //   if (existingAgenda) {
+    //     await this.prisma.agendaDetail.createMany({
+    //       data: agenda.agendaDetail.map((detail) => ({
+    //         title: detail.title,
+    //         description: detail.description,
+    //         timeStart: detail.timeStart,
+    //         timeEnd: detail.timeEnd,
+    //         agendaId: existingAgenda.id,
+    //       })),
+    //     });
+    //   } else {
+    //     // If the agenda for the given date does not exist, create a new agenda
+    //     await this.prisma.agenda.create({
+    //       data: {
+    //         date: new Date(agenda.date),
+    //         tripId,
+    //         agendaDetail: {
+    //           createMany: {
+    //             data: agenda.agendaDetail.map((detail) => ({
+    //               title: detail.title,
+    //               description: detail.description,
+    //               timeStart: detail.timeStart,
+    //               timeEnd: detail.timeEnd,
+    //             })),
+    //           },
+    //         },
+    //       },
+    //     });
+    //   }
+    // }
+    // return await this.prisma.agenda.findFirst({
+    //   where: {
+    //     tripId: tripId,
+    //   },
+    //   include: {
+    //     agendaDetail: true,
+    //     agendaString: true,
+    //   },
+    // });
   }
 
   async ApiUpdateAgenda(
@@ -1469,7 +1800,7 @@ export class TripService {
   }
 
   async create(
-    data: Prisma.TripCreateInput & { agenda: ReqCreateAgendaDto[] },
+    data: Prisma.TripCreateInput & { agenda: string[] },
     userId: string,
     placeName: string,
   ): Promise<Trip> {
@@ -1493,15 +1824,23 @@ export class TripService {
         },
       },
     });
-    if (data.agenda !== undefined) {
-      const agendaData = data.agenda as unknown as Prisma.AgendaCreateInput[];
-      await this.prisma.agenda.createMany({
-        data: agendaData.map((a) => ({
-          ...a,
+    if (data.agenda.length !== 0) {
+      await this.prisma.agendaString.createMany({
+        data: data.agenda.map((a) => ({
           tripId: createdTrip.id,
+          content: a,
         })),
       });
     }
+    // if (data.agenda !== undefined) {
+    //   const agendaData = data.agenda as unknown as Prisma.AgendaCreateInput[];
+    //   await this.prisma.agenda.createMany({
+    //     data: agendaData.map((a) => ({
+    //       ...a,
+    //       tripId: createdTrip.id,
+    //     })),
+    //   });
+    // }
     return this.getTrip(createdTrip.id);
   }
 

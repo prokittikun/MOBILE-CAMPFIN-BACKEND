@@ -8,6 +8,7 @@ import { UsersModule } from './users/users.module';
 import { PrismaService } from './database/prisma.service';
 import { TripModule } from './trip/trip.module';
 import { PlaceModule } from './place/place.module';
+import { ChatModule } from './chat/chat.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { PlaceModule } from './place/place.module';
     UsersModule,
     TripModule,
     PlaceModule,
+    ChatModule,
   ],
   controllers: [AppController],
   providers: [AppService, LogService, PrismaService],

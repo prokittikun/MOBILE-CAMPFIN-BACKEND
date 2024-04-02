@@ -7,11 +7,13 @@ import {
   Patch,
   Post,
   Req,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import { TripService } from './trip.service';
 import { AuthGuard } from '../authentication/authentication.guard';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiConsumes, ApiTags } from '@nestjs/swagger';
 import { Public } from 'src/authentication/reflector';
 import { Request } from 'express';
 import { ReqCreateTripDataDto } from './dto/requests/req-create-trip-data.dto';
@@ -20,6 +22,7 @@ import { ResCreateTripDataDto } from './dto/responses/res-create-trip-data.dto';
 import { ResDataDto } from '../DTO/res-data.dto';
 import {
   Agenda,
+  PendingCheckInTrip,
   PreTripParticipant,
   Trip,
   TripParticipant,
@@ -40,6 +43,8 @@ import {
 import { ReqUpdateAgendaDetailsDto } from './dto/requests/req-update-agenda-details.dto';
 import { ReqDeleteAgendaDetailsDto } from './dto/requests/req-delete-agenda-details.dto';
 import { ResAgendaDto } from './dto/responses/res-agenda-data.dto';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { imageFileFilter } from '../utils/validator';
 
 @Controller('trip')
 @ApiTags('Trip')
@@ -130,6 +135,11 @@ export class TripController {
     return await this.tripService.ApiGetMembers(tripId);
   }
 
+  @Get('my-reward-archived')
+  async getMyRewardArchived(@Req() req: Request) {
+    return await this.tripService.ApiGetMyRewardArchived(req);
+  }
+
   @Get(':tripId')
   @ApiOkResponseData(ResCreateTripDataDto)
   async getTrip(
@@ -180,7 +190,7 @@ export class TripController {
   async createAgenda(
     @Req() req: Request,
     @Body() agendaData: ReqRootAgendaDto,
-  ): Promise<ResDataDto<Agenda>> {
+  ): Promise<ResDataDto<any>> {
     return await this.tripService.ApiCreateAgenda(req, agendaData);
   }
 
@@ -200,6 +210,45 @@ export class TripController {
     @Body() agendaDetailIds: ReqDeleteAgendaDetailsDto,
   ): Promise<ResDataDto<Agenda>> {
     return await this.tripService.ApiDeleteAgendaDetails(req, agendaDetailIds);
+  }
+
+  @Post('check-in-trip/:tripId')
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(
+    FileInterceptor('placeImage', { fileFilter: imageFileFilter }),
+  )
+  async checkInTrip(
+    @Req() req: Request,
+    @Param('tripId') tripId: string,
+    @UploadedFile() placeImage: Express.Multer.File,
+  ): Promise<ResDataDto<Trip>> {
+    return await this.tripService.ApiUserCheckInTrip(req, tripId, placeImage);
+  }
+
+  @Post('get-pending-check-in-trips')
+  // @ApiOkResponseData(ResCreateTripDataDto, true)
+  async getPendingCheckIn(
+    @Req() req: Request,
+    @Body() pagination: PaginationDto,
+  ): Promise<ResPaginationDataDto<PendingCheckInTrip[]>> {
+    return await this.tripService.ApiGetPendingCheckIn(req, pagination);
+  }
+
+  @Post('approve-check-in/:pendingId/:userId')
+  async approveReward(
+    @Req() req: Request,
+    @Param('tripId') tripId: string,
+    @Param('userId') userId: string,
+  ) {
+    return await this.tripService.ApiApproveCheckIn(req, tripId, userId);
+  }
+
+  @Delete('reject-check-in/:pendingId')
+  async deleteReward(
+    @Req() req: Request,
+    @Param('pendingId') pendingId: string,
+  ) {
+    return await this.tripService.ApiDeleteCheckIn(pendingId);
   }
 
   // @Get('trips')

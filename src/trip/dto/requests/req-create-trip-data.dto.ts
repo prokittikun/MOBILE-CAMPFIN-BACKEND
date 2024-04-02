@@ -49,9 +49,9 @@ export class ReqCreateTripDataDto {
   @IsNotEmpty()
   readonly endDate: string;
 
-  @ApiProperty({ type: [ReqCreateAgendaDto] })
+  @ApiProperty()
   @IsArray()
   // @IsNotEmpty()
   @IsOptional()
-  readonly agenda: ReqCreateAgendaDto[];
+  readonly agenda: string[];
 }

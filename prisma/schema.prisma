@@ -11,25 +11,28 @@ datasource db {
 }
 
 model User {
-  id           String               @id @default(uuid())
-  campId       Int                  @default(autoincrement())
-  username     String
-  email        String               @unique
-  password     String
-  profileImage String?
-  displayName  String?
-  firstName    String?
-  lastName     String?
-  genders      Gender?              @relation("gender", fields: [gender], references: [name], onUpdate: Cascade, onDelete: Cascade)
-  gender       String?
-  address      String?
-  phoneNumber  String?
-  createdAt    DateTime             @default(now())
-  updatedAt    DateTime             @updatedAt
-  Trip         Trip[]
-  trips        TripParticipant[]
-  preTrips     PreTripParticipant[]
-  reviews      review[]
+  id                 String               @id @default(uuid())
+  campId             Int                  @default(autoincrement())
+  username           String
+  email              String               @unique
+  password           String
+  profileImage       String?
+  displayName        String?
+  firstName          String?
+  lastName           String?
+  genders            Gender?              @relation("gender", fields: [gender], references: [name], onUpdate: Cascade, onDelete: Cascade)
+  gender             String?
+  address            String?
+  phoneNumber        String?
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  Trip               Trip[]
+  trips              TripParticipant[]
+  preTrips           PreTripParticipant[]
+  Reviews            Review[]
+  RewardAchieved     RewardAchieved[]
+  PendingCheckInTrip PendingCheckInTrip[]
+  tripChat           tripChat[]
 }
 
 model Gender {
@@ -44,23 +47,35 @@ enum TripStatus {
 }
 
 model Trip {
-  id              String               @id @default(uuid())
-  title           String
-  description     String
-  maxParticipant  Int
-  isPublic        Boolean              @default(true)
-  status          TripStatus           @default(OPEN)
-  startDate       DateTime
-  endDate         DateTime
-  createdAt       DateTime             @default(now())
-  updatedAt       DateTime             @updatedAt
-  participants    TripParticipant[]
-  preParticipants PreTripParticipant[]
-  Place           Place?               @relation(fields: [placeName], references: [name], onUpdate: Cascade, onDelete: Cascade)
-  placeName       String
-  User            User?                @relation(fields: [userId], references: [id])
-  userId          String
-  Agenda          Agenda[]
+  id                 String               @id @default(uuid())
+  title              String
+  description        String
+  maxParticipant     Int
+  isPublic           Boolean              @default(true)
+  status             TripStatus           @default(OPEN)
+  startDate          DateTime
+  endDate            DateTime
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  participants       TripParticipant[]
+  preParticipants    PreTripParticipant[]
+  Place              Place?               @relation(fields: [placeName], references: [name], onUpdate: Cascade, onDelete: Cascade)
+  placeName          String
+  User               User?                @relation(fields: [userId], references: [id])
+  userId             String
+  Agenda             Agenda[]
+  PendingCheckInTrip PendingCheckInTrip[]
+  tripChat           tripChat[]
+  agendaString       agendaString[]
+}
+
+model agendaString {
+  id        String   @id @default(uuid())
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  Trip      Trip     @relation(fields: [tripId], references: [id])
+  tripId    String
 }
 
 //to do yarn db generate
@@ -121,11 +136,11 @@ model Place {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   trips       Trip[]
-  reviews     review[]
+  Reviews     Review[]
+  Reward      Reward[]
 }
 
-
-model review {
+model Review {
   id        String   @id @default(uuid())
   content   String
   rating    Int
@@ -135,4 +150,48 @@ model review {
   userId    String
   Place     Place    @relation(fields: [placeName], references: [name])
   placeName String
+}
+
+model Reward {
+  id             String           @id @default(uuid())
+  placeName      String
+  name           String
+  description    String
+  rewardImage    String
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  Place          Place            @relation(fields: [placeName], references: [name])
+  RewardAchieved RewardAchieved[]
+}
+
+model PendingCheckInTrip {
+  id            String   @id @default(uuid())
+  userId        String
+  tripId        String
+  imageEvidence String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  User          User     @relation(fields: [userId], references: [id])
+  Trip          Trip     @relation(fields: [tripId], references: [id])
+}
+
+model RewardAchieved {
+  id        String   @id @default(uuid())
+  userId    String
+  rewardId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  User      User     @relation(fields: [userId], references: [id])
+  Reward    Reward   @relation(fields: [rewardId], references: [id])
+}
+
+model tripChat {
+  id        String   @id @default(uuid())
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  User      User     @relation(fields: [userId], references: [id])
+  userId    String
+  Trip      Trip     @relation(fields: [tripId], references: [id])
+  tripId    String
 }

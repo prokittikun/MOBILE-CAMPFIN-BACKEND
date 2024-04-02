@@ -43,10 +43,11 @@ export class ReqCreateAgendaDto {
 }
 
 export class ReqRootAgendaDto {
-  @ApiProperty({ type: [ReqCreateAgendaDto] })
+  // @ApiProperty({ type: [ReqCreateAgendaDto] })
+  @ApiProperty()
   @IsArray()
   @IsNotEmpty()
-  readonly agenda: ReqCreateAgendaDto[];
+  readonly agenda: string[];
 
   @ApiProperty()
   @IsString()

@@ -391,6 +391,7 @@ export class TripService {
         endDate: true,
         createdAt: true,
         updatedAt: true,
+        agendaString: true,
         User: {
           select: {
             id: true,
@@ -632,15 +633,30 @@ export class TripService {
       {
         participants: {
           select: {
-            userId: true,
-            isPending: true,
-            createdAt: true,
+            User: {
+              select: {
+                id: true,
+                username: true,
+                email: true,
+                firstName: true,
+                lastName: true,
+                profileImage: true,
+              },
+            },
           },
         },
         preParticipants: {
           select: {
-            userId: true,
-            createdAt: true,
+            User: {
+              select: {
+                id: true,
+                username: true,
+                email: true,
+                firstName: true,
+                lastName: true,
+                profileImage: true,
+              },
+            },
           },
         },
       },
@@ -709,6 +725,7 @@ export class TripService {
         endDate: true,
         createdAt: true,
         updatedAt: true,
+        agendaString: true,
         User: {
           select: {
             id: true,

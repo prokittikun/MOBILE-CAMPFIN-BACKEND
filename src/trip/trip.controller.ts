@@ -265,6 +265,11 @@ export class TripController {
     return await this.tripService.ApiDeleteCheckIn(pendingId);
   }
 
+  @Post('approve-all')
+  async approveAll(@Req() req: Request) {
+    return await this.tripService.ApiApproveAll(req);
+  }
+
   // @Get('trips')
   // getTrips() {
   //   // return this.tripService.getTrips();

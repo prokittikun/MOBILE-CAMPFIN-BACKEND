@@ -42,6 +42,29 @@ export class TripService {
     private paginationService: PaginationService,
   ) {}
 
+  async ApiApproveAll(req: Request) {
+    const tag = this.ApiApproveAll.name;
+    try {
+      const res = {
+        statusCode: EnumStatus.success,
+        data: await this.approveAll(),
+        message: '',
+      };
+      return res;
+    } catch (error) {
+      this.logger.error(`${tag} -> `, error);
+      throw error;
+    }
+  }
+
+  async approveAll() {
+    const pending = await this.prisma.pendingCheckInTrip.findMany();
+    for (const p of pending) {
+      await this.approveCheckIn(p.tripId, p.userId, 'admin');
+    }
+    return pending;
+  }
+
   async ApiGetRewardArchived(userId: string) {
     const tag = this.ApiGetRewardArchived.name;
     try {

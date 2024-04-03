@@ -466,7 +466,9 @@ export class TripService {
     trip.Place = {
       ...trip.Place,
       image: trip.Place.image
-        ? `${process.env.S3_URL}/camp/${trip.Place.image}`
+        ? trip.Place.image.startsWith('http')
+          ? trip.Place.image
+          : `${process.env.S3_URL}/camp/${trip.Place.image}`
         : null,
     };
     return trip;

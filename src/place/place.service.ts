@@ -446,7 +446,9 @@ export class PlaceService {
     const data = await this.findUnique({
       name: placeName,
     });
-    data.image = `${process.env.S3_URL}/${this.campBucket}/${data.image}`;
+    if (!data.image.includes('http')) {
+      data.image = `${process.env.S3_URL}/${this.campBucket}/${data.image}`;
+    }
     return data;
   }
 

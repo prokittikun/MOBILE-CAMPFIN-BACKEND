@@ -85,15 +85,6 @@ export class TripService {
     if (!trip) {
       throw new HttpException('Trip not found', HttpStatus.NOT_FOUND);
     }
-    if (trip.status === TripStatus.CLOSE) {
-      throw new HttpException('The trip has ended', HttpStatus.BAD_REQUEST);
-    }
-    if (trip.status !== TripStatus.PROGRESS) {
-      throw new HttpException(
-        'The trip has not started yet',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
 
     const fileName = `${tripId}-${Date.now()}.jpg`;
     const data = await s3.send(
@@ -1155,12 +1146,6 @@ export class TripService {
       | null;
     if (!trip) {
       throw new HttpException('Trip not found', HttpStatus.NOT_FOUND);
-    }
-    if (trip.userId !== userId) {
-      throw new HttpException(
-        'You are not authorized to approve this member',
-        HttpStatus.FORBIDDEN,
-      );
     }
     if (!trip.participants.some((p) => p.userId === approveMemberData.userId)) {
       throw new HttpException(

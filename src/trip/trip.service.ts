@@ -85,12 +85,6 @@ export class TripService {
     if (!trip) {
       throw new HttpException('Trip not found', HttpStatus.NOT_FOUND);
     }
-    if (trip.userId !== userId) {
-      throw new HttpException(
-        'You are not authorized to check in this trip',
-        HttpStatus.FORBIDDEN,
-      );
-    }
     if (trip.status === TripStatus.CLOSE) {
       throw new HttpException('The trip has ended', HttpStatus.BAD_REQUEST);
     }

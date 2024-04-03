@@ -105,7 +105,7 @@ export class TripService {
     const data = await s3.send(
       new PutObjectCommand({
         Bucket: this.bucket,
-        Key: fileName + '.jpg',
+        Key: fileName,
         Body: placeImage.buffer,
       }),
     );

@@ -9,3 +9,189 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+model User {
+  id                 String               @id @default(uuid())
+  campId             Int                  @default(autoincrement())
+  username           String
+  email              String               @unique
+  password           String
+  profileImage       String?
+  displayName        String?
+  firstName          String?
+  lastName           String?
+  genders            Gender?              @relation("gender", fields: [gender], references: [name], onUpdate: Cascade, onDelete: Cascade)
+  gender             String?
+  address            String?
+  phoneNumber        String?
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  Trip               Trip[]
+  trips              TripParticipant[]
+  preTrips           PreTripParticipant[]
+  Reviews            Review[]
+  RewardAchieved     RewardAchieved[]
+  PendingCheckInTrip PendingCheckInTrip[]
+  tripChat           tripChat[]
+}
+
+model Gender {
+  name  String @id
+  users User[] @relation("gender")
+}
+
+enum TripStatus {
+  OPEN
+  PROGRESS
+  CLOSE
+}
+
+model Trip {
+  id                 String               @id @default(uuid())
+  title              String
+  description        String
+  maxParticipant     Int
+  isPublic           Boolean              @default(true)
+  status             TripStatus           @default(OPEN)
+  startDate          DateTime
+  endDate            DateTime
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  participants       TripParticipant[]
+  preParticipants    PreTripParticipant[]
+  Place              Place?               @relation(fields: [placeName], references: [name], onUpdate: Cascade, onDelete: Cascade)
+  placeName          String
+  User               User?                @relation(fields: [userId], references: [id], onUpdate: Cascade, onDelete: Cascade)
+  userId             String
+  Agenda             Agenda[]
+  PendingCheckInTrip PendingCheckInTrip[]
+  tripChat           tripChat[]
+  agendaString       agendaString[]
+}
+
+model agendaString {
+  id        String   @id @default(uuid())
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  Trip      Trip     @relation(fields: [tripId], references: [id], onUpdate: Cascade, onDelete: Cascade)
+  tripId    String
+}
+
+//to do yarn db generate
+model Agenda {
+  id           String         @id @default(uuid())
+  date         DateTime       @db.Date
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  Trip         Trip           @relation(fields: [tripId], references: [id], onUpdate: Cascade, onDelete: Cascade)
+  tripId       String
+  agendaDetail AgendaDetail[]
+}
+
+model AgendaDetail {
+  id          String   @id @default(uuid())
+  title       String
+  description String
+  timeStart   String
+  timeEnd     String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  Agenda      Agenda   @relation(fields: [agendaId], references: [id], onUpdate: Cascade, onDelete: Cascade)
+  agendaId    String
+}
+
+model TripParticipant {
+  tripId    String
+  userId    String
+  User      User     @relation(fields: [userId], references: [id], onUpdate: Cascade, onDelete: Cascade)
+  Trip      Trip     @relation(fields: [tripId], references: [id], onUpdate: Cascade, onDelete: Cascade)
+  isPending Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@id([tripId, userId])
+}
+
+model PreTripParticipant {
+  tripId    String
+  userId    String
+  User      User     @relation(fields: [userId], references: [id], onUpdate: Cascade, onDelete: Cascade)
+  Trip      Trip     @relation(fields: [tripId], references: [id], onUpdate: Cascade, onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@id([tripId, userId])
+}
+
+model Place {
+  name        String   @id @unique
+  image       String
+  description String
+  address     String
+  contact     String
+  location    String
+  latitude    Float
+  longitude   Float
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  trips       Trip[]
+  Reviews     Review[]
+  Reward      Reward[]
+}
+
+model Review {
+  id        String   @id @default(uuid())
+  content   String
+  rating    Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  User      User     @relation(fields: [userId], references: [id], onUpdate: Cascade, onDelete: Cascade)
+  userId    String
+  Place     Place    @relation(fields: [placeName], references: [name], onUpdate: Cascade, onDelete: Cascade)
+  placeName String
+}
+
+model Reward {
+  id             String           @id @default(uuid())
+  placeName      String
+  name           String
+  description    String
+  rewardImage    String
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  Place          Place            @relation(fields: [placeName], references: [name], onUpdate: Cascade, onDelete: Cascade)
+  RewardAchieved RewardAchieved[]
+}
+
+model PendingCheckInTrip {
+  id            String   @id @default(uuid())
+  userId        String
+  tripId        String
+  imageEvidence String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  User          User     @relation(fields: [userId], references: [id], onUpdate: Cascade, onDelete: Cascade)
+  Trip          Trip     @relation(fields: [tripId], references: [id], onUpdate: Cascade, onDelete: Cascade)
+}
+
+model RewardAchieved {
+  id        String   @id @default(uuid())
+  userId    String
+  rewardId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  User      User     @relation(fields: [userId], references: [id], onUpdate: Cascade, onDelete: Cascade)
+  Reward    Reward   @relation(fields: [rewardId], references: [id], onUpdate: Cascade, onDelete: Cascade)
+}
+
+model tripChat {
+  id        String   @id @default(uuid())
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  User      User     @relation(fields: [userId], references: [id], onUpdate: Cascade, onDelete: Cascade)
+  userId    String
+  Trip      Trip     @relation(fields: [tripId], references: [id], onUpdate: Cascade, onDelete: Cascade)
+  tripId    String
+}
